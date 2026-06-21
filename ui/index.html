@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>面试助手</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+:root {
+  --bg: #1a1a2e; --bg2: #16213e; --bg3: #0f3460;
+  --accent: #e94560; --accent2: #533483;
+  --text: #eee; --text2: #aaa; --text3: #666;
+  --green: #4ecca3; --yellow: #f0c040; --red: #e94560;
+  --radius: 10px;
+}
+body {
+  font-family: "Microsoft YaHei", "Segoe UI", sans-serif;
+  background: var(--bg); color: var(--text);
+  height: 100vh; display: flex; flex-direction: column;
+  overflow: hidden;
+}
+
+/* === Header === */
+.header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 16px; background: var(--bg2);
+  border-bottom: 1px solid #333;
+}
+.header h1 { font-size: 16px; font-weight: 600; }
+.status {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 12px; color: var(--text2);
+}
+.status-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--text3);
+}
+.status-dot.active { background: var(--green); animation: pulse 1.5s infinite; }
+.status-dot.paused { background: var(--yellow); }
+@keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
+
+/* === Controls === */
+.controls {
+  display: flex; gap: 8px; padding: 10px 16px;
+  background: var(--bg2); border-bottom: 1px solid #333;
+  flex-wrap: wrap;
+}
+.btn {
+  padding: 6px 14px; border: none; border-radius: var(--radius);
+  font-size: 13px; cursor: pointer; transition: all 0.2s;
+  font-weight: 500; color: #fff;
+}
+.btn-start { background: var(--green); color: #111; }
+.btn-start:hover { background: #3dbb8f; }
+.btn-stop { background: var(--red); }
+.btn-stop:hover { background: #c73550; }
+.btn-pause { background: var(--yellow); color: #111; }
+.btn-pause:hover { background: #d4a830; }
+.btn-clear { background: #444; }
+.btn-clear:hover { background: #555; }
+.btn-small { padding: 4px 10px; font-size: 12px; }
+.btn-settings { background: var(--accent2); }
+
+.mode-switch {
+  display: flex; border-radius: var(--radius); overflow: hidden;
+  border: 1px solid #444; margin-left: auto;
+}
+.mode-btn {
+  padding: 6px 12px; font-size: 12px; cursor: pointer;
+  background: transparent; color: var(--text2); border: none;
+  transition: all 0.2s;
+}
+.mode-btn.active { background: var(--accent); color: #fff; }
+
+/* === Chat Area === */
+.chat-area {
+  flex: 1; overflow-y: auto; padding: 12px 16px;
+  scroll-behavior: smooth;
+}
+.chat-area::-webkit-scrollbar { width: 4px; }
+.chat-area::-webkit-scrollbar-thumb { background: #444; border-radius: 2px; }
+
+.msg {
+  margin-bottom: 12px; max-width: 95%;
+  animation: fadeIn 0.3s ease;
+}
+@keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:none; } }
+
+.msg-label {
+  font-size: 11px; color: var(--text3); margin-bottom: 4px;
+  display: flex; align-items: center; gap: 6px;
+}
+.msg-bubble {
+  padding: 10px 14px; border-radius: var(--radius);
+  font-size: 14px; line-height: 1.6; white-space: pre-wrap;
+  word-break: break-word;
+}
+.msg-transcript .msg-bubble {
+  background: var(--bg3); border: 1px solid #2a4a7f;
+}
+.msg-answer .msg-bubble {
+  background: linear-gradient(135deg, #1a3a5c, #1e2a4a);
+  border: 1px solid var(--accent2);
+  color: #fff; font-size: 15px;
+}
+
+/* === Empty State === */
+.empty {
+  display: flex; flex-direction: column; align-items: center;
+  justify-content: center; height: 100%; color: var(--text3);
+  text-align: center; gap: 12px;
+}
+.empty-icon { font-size: 48px; }
+.empty-text { font-size: 14px; line-height: 1.8; }
+
+
+/* === Waveform === */
+.waveform-container {
+  display: none; padding: 8px 16px;
+  background: var(--bg2); border-bottom: 1px solid #333;
+  align-items: center; gap: 10px;
+}
+.waveform-container.show { display: flex; }
+.waveform-label { font-size: 11px; color: var(--text3); white-space: nowrap; }
+.waveform-bars {
+  flex: 1; display: flex; align-items: center; gap: 2px; height: 30px;
+}
+.waveform-bar {
+  flex: 1; background: var(--accent); border-radius: 2px;
+  min-height: 3px; transition: height 0.05s ease;
+  opacity: 0.8;
+}
+.waveform-bar.active { background: var(--green); }
+.waveform-peak { font-size: 11px; color: var(--text2); min-width: 50px; text-align: right; }
+
+/* === Input Area === */
+.input-area {
+  display: flex; gap: 8px; padding: 10px 16px;
+  background: var(--bg2); border-top: 1px solid #333;
+  align-items: center;
+}
+.input-area input {
+  flex: 1; padding: 8px 12px; background: #0d1b2a;
+  border: 1px solid #333; border-radius: var(--radius);
+  color: var(--text); font-size: 14px; outline: none;
+}
+.input-area input:focus { border-color: var(--accent); }
+.btn-send { background: var(--accent); }
+.btn-record { background: var(--green); color: #111; min-width: 60px; }
+.btn-record:hover { background: #3dbb8f; }
+.btn-record.recording { background: var(--red); color: #fff; animation: pulse 1s infinite; }
+.btn-send:hover { background: #c73550; }
+
+/* === Settings Panel === */
+.settings-overlay {
+  display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.6); z-index: 100;
+}
+.settings-overlay.show { display: flex; justify-content: center; align-items: center; }
+.settings-panel {
+  background: var(--bg2); border-radius: 12px; padding: 24px;
+  width: 90%; max-width: 440px; max-height: 85vh; overflow-y: auto;
+  border: 1px solid #444;
+}
+.settings-panel h2 { font-size: 16px; margin-bottom: 16px; color: var(--accent); }
+.field { margin-bottom: 14px; }
+.field label {
+  display: block; font-size: 12px; color: var(--text2);
+  margin-bottom: 4px;
+}
+.field input, .field select, .field textarea {
+  width: 100%; padding: 8px 10px; background: #0d1b2a;
+  border: 1px solid #333; border-radius: 6px;
+  color: var(--text); font-size: 13px; outline: none;
+}
+.field input:focus, .field textarea:focus { border-color: var(--accent); }
+.field textarea { height: 100px; resize: vertical; font-family: inherit; }
+.field select option { background: #0d1b2a; }
+.settings-actions {
+  display: flex; gap: 8px; margin-top: 16px; justify-content: flex-end;
+}
+
+/* === Keyboard shortcut hint === */
+.shortcuts {
+  padding: 8px 16px; background: var(--bg2);
+  border-top: 1px solid #333; font-size: 11px;
+  color: var(--text3); display: flex; gap: 16px; justify-content: center;
+}
+.shortcut kbd {
+  background: #333; padding: 1px 6px; border-radius: 3px;
+  font-size: 11px; color: var(--text2);
+}
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <h1>🎤 面试助手</h1>
+  <div class="status">
+    <div class="status-dot" id="statusDot"></div>
+    <span id="statusText">就绪</span>
+  </div>
+</div>
+
+<!-- Controls -->
+<div class="controls">
+  <button class="btn btn-start" id="btnStart" onclick="startListen()">▶ 开始</button>
+  <button class="btn btn-stop" id="btnStop" onclick="stopListen()" style="display:none">■ 停止</button>
+  <button class="btn btn-pause" id="btnPause" onclick="pauseListen()" style="display:none">⏸ 暂停</button>
+  <button class="btn btn-clear" onclick="clearChat()">🗑 清空</button>
+  <div class="mode-switch">
+    <button class="mode-btn active" id="modeOnline" onclick="setMode('online')">☁ 云端</button>
+    <button class="mode-btn" id="modeOffline" onclick="setMode('offline')">💻 本地</button>
+  </div>
+  <button class="btn btn-settings btn-small" onclick="toggleSettings()">⚙</button>
+</div>
+
+
+<!-- Waveform -->
+<div class="waveform-container" id="waveformContainer">
+  <div class="waveform-label">🎤</div>
+  <div class="waveform-bars" id="waveformBars"></div>
+  <div class="waveform-peak" id="waveformPeak">0.000</div>
+</div>
+<!-- Chat Area -->
+<div class="chat-area" id="chatArea">
+  <div class="empty" id="emptyState">
+    <div class="empty-icon">🎙</div>
+    <div class="empty-text">
+      点击「开始」启动语音监听，或在下方直接输入问题<br><br>
+      <strong>快捷键</strong><br>
+      <kbd>Ctrl+Shift+S</kbd> 开始/停止<br>
+      <kbd>Ctrl+Shift+P</kbd> 暂停/继续<br>
+      <kbd>Ctrl+Shift+C</kbd> 清空记录<br>
+      <kbd>Enter</kbd> 发送输入
+    </div>
+  </div>
+</div>
+
+<!-- Input Area -->
+<div class="input-area">
+  <button class="btn btn-record" id="btnRecord" onclick="toggleRecord()">🎤</button>
+  <input type="text" id="manualInput" placeholder="输入面试问题..." onkeydown="if(event.key==='Enter')sendText()">
+  <button class="btn btn-send" onclick="sendText()">发送</button>
+</div>
+
+<!-- Shortcuts Bar -->
+<div class="shortcuts">
+  <span class="shortcut"><kbd>Ctrl+Shift+S</kbd> 开始/停止</span>
+  <span class="shortcut"><kbd>Ctrl+Shift+P</kbd> 暂停</span>
+  <span class="shortcut"><kbd>Enter</kbd> 发送</span>
+</div>
+
+<!-- Settings Overlay -->
+<div class="settings-overlay" id="settingsOverlay" onclick="closeSettingsOutside(event)">
+  <div class="settings-panel">
+    <h2>⚙ 设置</h2>
+
+    <div class="field">
+      <label>API Key</label>
+      <input type="password" id="sApiKey" placeholder="sk-...">
+    </div>
+    <div class="field">
+      <label>API Base URL</label>
+      <input type="text" id="sApiBase" placeholder="https://api.openai.com/v1">
+    </div>
+    <div class="field">
+      <label>模型名称</label>
+      <input type="text" id="sModel" placeholder="gpt-4o-mini">
+    </div>
+    <div class="field">
+      <label>识别语言</label>
+      <select id="sLanguage">
+        <option value="zh">中文</option>
+        <option value="en">English</option>
+        <option value="ja">日本語</option>
+        <option value="auto">自动检测</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>音频输入设备</label>
+      <select id="sDevice"><option value="-1">默认麦克风</option></select>
+    </div>
+    <div class="field">
+      <label>静音阈值 (越小越灵敏)</label>
+      <input type="range" id="sThreshold" min="0.001" max="0.05" step="0.001" value="0.015">
+    </div>
+    <div class="field">
+      <label>静音判定时长 (秒)</label>
+      <input type="range" id="sSilence" min="0.5" max="3" step="0.1" value="1.2">
+    </div>
+    <div class="field">
+      <label>系统提示词 (AI人设)</label>
+      <textarea id="sPrompt"></textarea>
+    </div>
+
+    <div class="settings-actions">
+      <button class="btn btn-clear" onclick="testApi()">测试连接</button>
+      <button class="btn btn-start" onclick="saveSettings()">保存</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// === State ===
+let isListening = false;
+let isPaused = false;
+
+// === PyWebView Bridge ===
+function callApi(method, args) {
+  if (window.pywebview && window.pywebview.api) {
+    return window.pywebview.api[method](...(args || []));
+  }
+  return Promise.resolve({ok: false, msg: "等待后端就绪..."});
+}
+
+// === Message Handler (called from Python) ===
+function handleMessage(msg) {
+  const chatArea = document.getElementById("chatArea");
+  const empty = document.getElementById("emptyState");
+  if (empty) empty.remove();
+
+  if (msg.type === "transcript") {
+    addMessage("transcript", "🎤 面试官", msg.data);
+  } else if (msg.type === "answer") {
+    addMessage("answer", "💡 建议回答", msg.data);
+  } else if (msg.type === "status") {
+    updateStatus(msg.data);
+  }
+  chatArea.scrollTop = chatArea.scrollHeight;
+}
+
+function addMessage(type, label, text) {
+  const chatArea = document.getElementById("chatArea");
+  const div = document.createElement("div");
+  div.className = `msg msg-${type}`;
+  div.innerHTML = `
+    <div class="msg-label">${label}</div>
+    <div class="msg-bubble">${escapeHtml(text)}</div>
+  `;
+  chatArea.appendChild(div);
+  chatArea.scrollTop = chatArea.scrollHeight;
+}
+
+function escapeHtml(text) {
+  const d = document.createElement("div");
+  d.textContent = text;
+  return d.innerHTML;
+}
+
+function updateStatus(text) {
+  document.getElementById("statusText").textContent = text;
+  const dot = document.getElementById("statusDot");
+  dot.className = "status-dot";
+  if (text === "监听中...") dot.classList.add("active");
+  else if (text === "已暂停") dot.classList.add("paused");
+}
+
+// === Manual Input ===
+async function sendText() {
+  const input = document.getElementById("manualInput");
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = "";
+  await callApi("send_text", [text]);
+}
+
+// === Controls ===
+async function startListen() {
+  document.getElementById("btnStart").style.display = "none";
+  document.getElementById("btnStop").style.display = "";
+  document.getElementById("btnPause").style.display = "";
+  isListening = true;
+  startWaveform();
+  await callApi("start_listen");
+}
+
+async function stopListen() {
+  document.getElementById("btnStart").style.display = "";
+  document.getElementById("btnStop").style.display = "none";
+  document.getElementById("btnPause").style.display = "none";
+  isListening = false;
+  isPaused = false;
+  document.getElementById("btnPause").textContent = "⏸ 暂停";
+  stopWaveform();
+  await callApi("stop_listen");
+}
+
+async function pauseListen() {
+  const result = await callApi("pause_listen");
+  isPaused = result.paused;
+  document.getElementById("btnPause").textContent = isPaused ? "▶ 继续" : "⏸ 暂停";
+}
+
+function clearChat() {
+  const chatArea = document.getElementById("chatArea");
+  chatArea.innerHTML = `
+    <div class="empty" id="emptyState">
+      <div class="empty-icon">🎙</div>
+      <div class="empty-text">已清空，等待新的提问...</div>
+    </div>`;
+  callApi("clear_history");
+}
+
+function setMode(mode) {
+  document.getElementById("modeOnline").classList.toggle("active", mode === "online");
+  document.getElementById("modeOffline").classList.toggle("active", mode === "offline");
+  callApi("set_mode", [mode]);
+}
+
+// === Settings ===
+async function toggleSettings() {
+  const overlay = document.getElementById("settingsOverlay");
+  if (overlay.classList.contains("show")) {
+    overlay.classList.remove("show");
+    return;
+  }
+  const cfg = await callApi("get_config");
+  document.getElementById("sApiKey").value = cfg.api_key || "";
+  document.getElementById("sApiBase").value = cfg.api_base || "";
+  document.getElementById("sModel").value = cfg.model || "";
+  document.getElementById("sLanguage").value = cfg.language || "zh";
+  document.getElementById("sThreshold").value = cfg.silence_threshold || 0.015;
+  document.getElementById("sSilence").value = cfg.silence_duration || 1.2;
+  document.getElementById("sPrompt").value = cfg.system_prompt || "";
+
+  const devs = await callApi("get_devices");
+  const sel = document.getElementById("sDevice");
+  sel.innerHTML = '<option value="-1">默认麦克风</option>';
+  if (devs && devs.length) {
+    devs.forEach(d => {
+      sel.innerHTML += `<option value="${d.index}">${d.name}</option>`;
+    });
+  }
+  overlay.classList.add("show");
+}
+
+function closeSettingsOutside(e) {
+  if (e.target === document.getElementById("settingsOverlay")) {
+    document.getElementById("settingsOverlay").classList.remove("show");
+  }
+}
+
+async function saveSettings() {
+  const settings = {
+    api_key: document.getElementById("sApiKey").value.trim(),
+    api_base: document.getElementById("sApiBase").value.trim(),
+    model: document.getElementById("sModel").value.trim(),
+    language: document.getElementById("sLanguage").value,
+    silence_threshold: parseFloat(document.getElementById("sThreshold").value),
+    silence_duration: parseFloat(document.getElementById("sSilence").value),
+    system_prompt: document.getElementById("sPrompt").value,
+  };
+  const devVal = document.getElementById("sDevice").value;
+  if (devVal !== "-1") {
+    await callApi("set_device", [parseInt(devVal)]);
+  }
+  await callApi("save_settings", [settings]);
+  document.getElementById("settingsOverlay").classList.remove("show");
+  handleMessage({type: "status", data: "设置已保存"});
+}
+
+async function testApi() {
+  const r = await callApi("test_api");
+  alert(r.msg);
+}
+
+// === Keyboard Shortcuts ===
+document.addEventListener("keydown", function(e) {
+  if (e.ctrlKey && e.shiftKey) {
+    if (e.key === "S" || e.key === "s") {
+      e.preventDefault();
+      isListening ? stopListen() : startListen();
+    } else if (e.key === "P" || e.key === "p") {
+      e.preventDefault();
+      if (isListening) pauseListen();
+    } else if (e.key === "C" || e.key === "c") {
+      e.preventDefault();
+      clearChat();
+    }
+  }
+});
+
+
+// === Waveform ===
+let waveformInterval = null;
+const BAR_COUNT = 32;
+let waveformBars = [];
+
+function initWaveform() {
+  const container = document.getElementById("waveformBars");
+  container.innerHTML = "";
+  waveformBars = [];
+  for (let i = 0; i < BAR_COUNT; i++) {
+    const bar = document.createElement("div");
+    bar.className = "waveform-bar";
+    bar.style.height = "3px";
+    container.appendChild(bar);
+    waveformBars.push(bar);
+  }
+}
+
+function startWaveform() {
+  document.getElementById("waveformContainer").classList.add("show");
+  if (!waveformBars.length) initWaveform();
+  if (waveformInterval) return;
+  waveformInterval = setInterval(async () => {
+    try {
+      const level = await callApi("get_audio_level");
+      updateWaveform(typeof level === 'number' ? level : 0);
+    } catch(e) {}
+  }, 50);
+}
+
+function stopWaveform() {
+  document.getElementById("waveformContainer").classList.remove("show");
+  if (waveformInterval) {
+    clearInterval(waveformInterval);
+    waveformInterval = null;
+  }
+}
+
+function updateWaveform(level) {
+  const scaled = Math.min(level * 20, 1);
+  const threshold = 0.005 * 20;
+  document.getElementById("waveformPeak").textContent = level.toFixed(4);
+
+  for (let i = 0; i < BAR_COUNT; i++) {
+    const offset = Math.abs(i - BAR_COUNT/2) / (BAR_COUNT/2);
+    const h = Math.max(3, scaled * 30 * (1 - offset * 0.7) + Math.random() * 3 * scaled);
+    waveformBars[i].style.height = h + "px";
+    if (scaled > threshold) {
+      waveformBars[i].classList.add("active");
+    } else {
+      waveformBars[i].classList.remove("active");
+    }
+  }
+}
+
+
+// === Voice Record ===
+let isRecording = false;
+
+async function toggleRecord() {
+  if (isRecording) {
+    await stopRecord();
+  } else {
+    await startRecord();
+  }
+}
+
+async function startRecord() {
+  isRecording = true;
+  const btn = document.getElementById("btnRecord");
+  btn.textContent = "⏹";
+  btn.classList.add("recording");
+  startWaveform();
+  await callApi("start_record");
+}
+
+async function stopRecord() {
+  const btn = document.getElementById("btnRecord");
+  btn.textContent = "🎤";
+  btn.classList.remove("recording");
+  stopWaveform();
+
+  const result = await callApi("stop_record");
+  isRecording = false;
+
+  if (result && result.text && result.text.trim()) {
+    // 将识别结果显示在输入框
+    document.getElementById("manualInput").value = result.text.trim();
+    handleMessage({type: "status", data: "识别完成，按回车发送"});
+  } else {
+    handleMessage({type: "status", data: "未识别到文字"});
+  }
+}
+
+// === Init ===
+window.addEventListener("pywebviewready", function() {
+  handleMessage({type: "status", data: "就绪 - 输入问题或点击开始"});
+});
+</script>
+</body>
+</html>
