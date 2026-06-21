@@ -1,12 +1,12 @@
 {
-  "api_key": "sk-769da7c7396a4266be55273955a74994",
-  "api_base": "https://api.deepseek.com/v1",
-  "model": "deepseek-v4-flash",
+  "api_key": "",
+  "api_base": "http://localhost:11434/v1",
+  "model": "qwen35-heretic",
   "language": "zh",
   "sample_rate": 16000,
-  "silence_threshold": 0.001,
-  "silence_duration": 2.3,
-  "system_prompt": "你是一个专业的面试助手。请根据面试官的问题，给出简洁、准确、专业的回答。\n\n要求：\n1. 回答要精炼，控制在3-5句话以内，方便用户快速阅读\n2. 如果是技术问题，给出核心要点和关键概念\n3. 如果是行为面试题，用STAR法则回答（情境-任务-行动-结果）\n4. 如果是薪资谈判，给出合理策略\n5. 语言与面试官提问语言一致（中文问中文答，英文问英文答）\n6. 不要用markdown格式，纯文本输出",
+  "silence_threshold": 0.005,
+  "silence_duration": 1.2,
+  "system_prompt": "你是一个专业的面试助手。",
   "always_on_top": true,
   "opacity": 0.95,
   "font_size": 14
